@@ -714,7 +714,7 @@ export default function RecruitDashboard() {
           </div>
 
           {/* Bottom */}
-          <div style={{ display:"grid", gridTemplateColumns:selectedKPI?"1.05fr 0.95fr 0.9fr":"1fr 1fr", gap:14 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
 
             {/* Job Postings */}
             <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, padding:"14px 14px 0", display:"flex", flexDirection:"column" }}>
@@ -815,41 +815,42 @@ export default function RecruitDashboard() {
                 ))}
               </div>
             </div>
-            {selectedKPI && (
-              <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                  <span style={{ fontWeight:700, fontSize:14, color:"#111" }}>{selectedKPI} 상세</span>
-                  <button onClick={()=>setSelectedKPI(null)} style={{ border:"none", background:"none", color:"#6B7280", cursor:"pointer", fontSize:12 }}>닫기</button>
-                </div>
-                {(!kpiDetails || kpiDetails.length===0) ? (
-                  <EmptyState message="선택된 KPI 항목이 없습니다"/>
-                ) : (
-                  <div style={{ display:"grid", gap:10 }}>
-                    {(selectedKPI==="오픈 공고" ? kpiDetails : kpiDetails).map(item=> (
-                      <div key={(item.id||item.name)+"-kpi"} style={{ border:"1px solid #F3F4F6", borderRadius:8, padding:"10px", display:"flex", flexDirection:"column", gap:4, background:"#FAFBFF" }}>
-                        {selectedKPI==="오픈 공고" ? (
-                          <>
-                            <div style={{ fontWeight:700, color:"#111" }}>{item.title}</div>
-                            <div style={{ fontSize:12, color:"#6B7280" }}>{item.직군} · {item.담당자}</div>
-                            <div style={{ fontSize:12, color:"#374151" }}>지원자 {item.applied}명 · 인터뷰 {item.interview}명 · 상태 {item.상태}</div>
-                          </>
-                        ) : (
-                          <>
-                            <div style={{ fontWeight:700, color:"#111" }}>{item.name}</div>
-                            <div style={{ fontSize:12, color:"#6B7280" }}>{item.jobTitle} · {KANBAN_STAGE_DEFS.find(s=>s.id===item.stage)?.label||item.stage}</div>
-                            <div style={{ fontSize:12, color:"#374151" }}>담당자 {item.담당자} · 상태 {item.stageStatus || item.단계상태 || "-"}</div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* KPI 상세는 우측 고정 사이드 패널로 렌더링됩니다 (전체화면 우측) */}
           </div>
         </div>
       </div>
 
+      {selectedKPI && (
+        <div style={{ position:"fixed", top:0, right:0, height:"100vh", width:420, maxWidth:"40%", background:"#fff", boxShadow:"-20px 0 40px rgba(2,6,23,0.08)", borderLeft:"1px solid #E5E7EB", padding:20, overflow:"auto", zIndex:1000 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+            <span style={{ fontWeight:700, fontSize:16, color:"#111" }}>{selectedKPI} 상세</span>
+            <button onClick={()=>setSelectedKPI(null)} style={{ border:"none", background:"none", color:"#6B7280", cursor:"pointer", fontSize:12 }}>닫기</button>
+          </div>
+          {(!kpiDetails || kpiDetails.length===0) ? (
+            <EmptyState message="선택된 KPI 항목이 없습니다"/>
+          ) : (
+            <div style={{ display:"grid", gap:10 }}>
+              {(selectedKPI==="오픈 공고" ? kpiDetails : kpiDetails).map(item=> (
+                <div key={(item.id||item.name)+"-kpi"} style={{ border:"1px solid #F3F4F6", borderRadius:8, padding:12, display:"flex", flexDirection:"column", gap:6, background:"#FAFBFF" }}>
+                  {selectedKPI==="오픈 공고" ? (
+                    <>
+                      <div style={{ fontWeight:700, color:"#111" }}>{item.title}</div>
+                      <div style={{ fontSize:12, color:"#6B7280" }}>{item.직군} · {item.담당자}</div>
+                      <div style={{ fontSize:12, color:"#374151" }}>지원자 {item.applied}명 · 인터뷰 {item.interview}명 · 상태 {item.상태}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontWeight:700, color:"#111" }}>{item.name}</div>
+                      <div style={{ fontSize:12, color:"#6B7280" }}>{item.jobTitle} · {KANBAN_STAGE_DEFS.find(s=>s.id===item.stage)?.label||item.stage}</div>
+                      <div style={{ fontSize:12, color:"#374151" }}>담당자 {item.담당자} · 상태 {item.stageStatus || item.단계상태 || "-"}</div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <CandidateModal candidate={selectedCandidate} onClose={()=>setSelectedCandidate(null)}/>
       <JobModal job={selectedJob} onClose={()=>setSelectedJob(null)}/>
     </div>
