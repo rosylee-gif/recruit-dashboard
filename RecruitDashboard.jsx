@@ -44,7 +44,7 @@ const LANDING_PRESETS = [
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "대시보드" },
   { icon: CheckCircle2,    label: "사내추천 확인" },
-  { icon: FileText,        label: "등록요청" },
+  { icon: FileText,        label: "등록요청", href: "https://elena62-del.github.io/jd-mockup/" },
   { icon: TrendingUp,      label: "전형 확인/평가" },
   { icon: Users,           label: "영입 관리" },
   { icon: Megaphone,       label: "공채 관리" },
@@ -577,11 +577,20 @@ export default function RecruitDashboard() {
           <span style={{ fontWeight:700, fontSize:14, color:"#111" }}>영입 대시보드</span>
         </div>
         <nav style={{ padding:"10px 8px", flex:1 }}>
-          {NAV_ITEMS.map(({icon:Icon, label})=>(
-            <button key={label} onClick={()=>setActiveNav(label)}
-              style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"9px 10px", borderRadius:7, border:"none", cursor:"pointer", background:activeNav===label?"#EFF6FF":"transparent", color:activeNav===label?"#3B82F6":"#6B7280", fontWeight:activeNav===label?600:400, fontSize:13, marginBottom:2, textAlign:"left" }}>
-              <Icon size={16}/>{label}
-            </button>
+          {NAV_ITEMS.map(({icon:Icon, label, href})=>(
+            href ? (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"9px 10px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:"#6B7280", fontWeight:400, fontSize:13, marginBottom:2, textAlign:"left", textDecoration:"none", transition:"background 0.2s" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#EFF6FF"}
+                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                <Icon size={16}/>{label}
+              </a>
+            ) : (
+              <button key={label} onClick={()=>setActiveNav(label)}
+                style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"9px 10px", borderRadius:7, border:"none", cursor:"pointer", background:activeNav===label?"#EFF6FF":"transparent", color:activeNav===label?"#3B82F6":"#6B7280", fontWeight:activeNav===label?600:400, fontSize:13, marginBottom:2, textAlign:"left" }}>
+                <Icon size={16}/>{label}
+              </button>
+            )
           ))}
         </nav>
         <div style={{ padding:"10px 8px", borderTop:"1px solid #F3F4F6" }}>
