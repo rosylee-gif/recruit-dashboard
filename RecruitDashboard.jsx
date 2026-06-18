@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   LayoutDashboard, Megaphone, Users, CalendarDays, FileText,
-  Settings, Star, Bell, ChevronDown, Search, Plus, X,
-  TrendingUp, TrendingDown, AlertCircle, Filter,
-  ChevronRight, MoreHorizontal, CheckCircle2, Circle,
+  Settings, Star, Bell, ChevronDown, Search, X,
+  TrendingUp, TrendingDown, AlertCircle,
+  ChevronRight, CheckCircle2, Circle,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -29,20 +29,31 @@ const HEADER_FILTERS = [
   { key: "직원유형", label: "전체 직원유형", options: ["전체", "정규직", "계약직", "인턴", "어시스턴트", "경영계약직", "전문계약직"] },
 ];
 
+const STAGE_GROUPS = {
+  전체: ["docs","rec","code","task","pre","int1","int2","ref","offer","final"],
+  "인터뷰 전": ["docs","rec","code","task"],
+  인터뷰: ["pre","int1","int2"],
+  "인터뷰 후": ["ref","offer","final"],
+};
+
 const LANDING_PRESETS = [
   { key:"all", label:"전체 공고", filters:{ 직군:"전체", 상태:"전체", 담당자:"전체", 직원유형:"전체", searchJob:"", searchCandidate:"", searchDept:"" } },
   { key:"mine", label:"내 담당 공고", filters:{ 직군:"전체", 상태:"전체", 담당자:"rosy.lee", 직원유형:"전체", searchJob:"", searchCandidate:"", searchDept:"" } },
-  { key:"inProgress", label:"진행 중 공고", filters:{ 직군:"전체", 상태:"진행중", 담당자:"전체", 직원유형:"전체", searchJob:"", searchCandidate:"", searchDept:"" } },
-  { key:"design", label:"디자인 공고", filters:{ 직군:"디자인", 상태:"전체", 담당자:"전체", 직원유형:"전체", searchJob:"", searchCandidate:"", searchDept:"" } },
 ];
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "대시보드" },
-  { icon: Megaphone,       label: "공고" },
-  { icon: Users,           label: "지원자" },
-  { icon: CalendarDays,    label: "인터뷰" },
+  { icon: CheckCircle2,    label: "사내추천 확인" },
+  { icon: FileText,        label: "등록요청" },
+  { icon: TrendingUp,      label: "전형 확인/평가" },
+  { icon: Users,           label: "영입 관리" },
+  { icon: Megaphone,       label: "공채 관리" },
+  { icon: Settings,        label: "시스템 관리" },
+  { icon: FileText,        label: "메인페이지 관리" },
+  { icon: Search,          label: "입사예정자조회" },
+  { icon: TrendingUp,      label: "연봉담당자" },
   { icon: FileText,        label: "리포트" },
-  { icon: Settings,        label: "설정" },
+  { icon: Settings,        label: "Admin" },
 ];
 
 const ACTION_TAGS = ["전체", "처우 협의", "인터뷰 결과", "과제제출 리마인드", "코딩테스트", "피드백", "레퍼런스 체크"];
@@ -164,10 +175,10 @@ const CANDIDATE_DETAIL_TEMPLATE = {
 // 3. KANBAN STAGE DEFINITIONS (layout only — candidates come from ALL_CANDIDATES)
 // ─────────────────────────────────────────────────────────────────────────────
 const KANBAN_STAGE_DEFS = [
-  { id:"docs",  label:"서류평가",    onlyRecommended:false, warnings:[{label:"7일 경과",count:2},{label:"예의 합격필요",count:1}] },
+  { id:"docs",  label:"서류평가",    onlyRecommended:false, warnings:[{label:"7일 경과",count:2},{label:"예외 합격필요",count:1}] },
   { id:"rec",   label:"추천서 작성", onlyRecommended:true,  warnings:[] },
-  { id:"code",  label:"코딩테스트",  onlyRecommended:false, warnings:[{label:"7일 경과",count:2},{label:"예의 합격필요",count:1}] },
-  { id:"task",  label:"과제전형",    onlyRecommended:false, warnings:[{label:"예의 합격필요",count:2}] },
+  { id:"code",  label:"코딩테스트",  onlyRecommended:false, warnings:[{label:"7일 경과",count:2},{label:"예외 합격필요",count:1}] },
+  { id:"task",  label:"과제전형",    onlyRecommended:false, warnings:[{label:"예외 합격필요",count:2}] },
   { id:"pre",   label:"사전인터뷰",  onlyRecommended:false, warnings:[] },
   { id:"int1",  label:"1차 인터뷰",  onlyRecommended:false, warnings:[] },
   { id:"int2",  label:"2차 인터뷰",  onlyRecommended:false, warnings:[] },
@@ -275,7 +286,7 @@ function JobModal({ job, onClose }) {
         <div style={{ fontSize:13, color:"#6B7280", marginTop:4 }}>{job.부서} · 담당: {job.담당자}</div>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
-        {[["직군",job.직군],["직원유형",job.직원유형],["채용 인원","2명"],["지원자 수",`${job.applied}명`],["인터뷰 진행",`${job.interview}명`],["오퍼 발송",`${job.offer}명`],["마감일",job.deadline],["7일 이상 정체",`${job.stale}명`]].map(([k,v])=>(
+        {[["직군",job.직군],["직원유형",job.직원유형],["채용 인원","2명"],["지원자 수",`${job.applied}명`],["인터뷰 진행",`${job.interview}명`],["오퍼 발송",`${job.offer}명`],["7일 이상 정체",`${job.stale}명`]].map(([k,v])=>(
           <div key={k} style={{ background:"#F9FAFB", borderRadius:8, padding:"10px 12px" }}>
             <div style={{ fontSize:11, color:"#9CA3AF", marginBottom:3 }}>{k}</div>
             <div style={{ fontSize:14, color:"#111", fontWeight:600 }}>{v}</div>
@@ -410,7 +421,7 @@ export default function RecruitDashboard() {
   const [activeNav, setActiveNav]             = useState("대시보드");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [selectedJob, setSelectedJob]         = useState(null);
-  const [jobTab, setJobTab]                   = useState("진행 중");
+  const [jobTab, setJobTab]                   = useState("전체");
   const [actionFilter, setActionFilter]       = useState("전체");
   const [openId, setOpenId]                   = useState(null);
   const [headerFilters, setHeaderFilters]     = useState({ 직군:"전체", 상태:"전체", 담당자:"전체", 직원유형:"전체" });
@@ -420,10 +431,16 @@ export default function RecruitDashboard() {
   const [landingPreset, setLandingPreset]     = useState(LANDING_PRESETS[0]);
   const [landingMenuOpen, setLandingMenuOpen] = useState(false);
   const [selectedKPI, setSelectedKPI]         = useState(null);
+  const [stageGroup, setStageGroup]           = useState("전체");
   const [stageFilters, setStageFilters]       = useState({ docs:"전체", rec:"전체", code:"전체", task:"전체", pre:"전체", int1:"전체", int2:"전체", ref:"전체", offer:"전체", final:"전체" });
+  const [stageVisibleCounts, setStageVisibleCounts] = useState({});
 
   const setHF = (k,v) => setHeaderFilters(p=>({...p,[k]:v}));
   const clearHF = (k) => setHF(k,"전체");
+
+  useEffect(()=>{
+    setStageVisibleCounts({});
+  }, [stageFilters, headerFilters, searchCandidate, searchDept]);
 
   const applyLandingPreset = (preset) => {
     setLandingPreset(preset);
@@ -470,14 +487,10 @@ export default function RecruitDashboard() {
   const filteredJobs = useMemo(()=>ALL_JOB_POSTINGS.filter(matchJob),[headerFilters,searchJob,searchDept]);
 
   // Job postings split by tab
-  const tabStatusMap = { "진행 중":"진행중", "오픈 예정":"대기중", "마감":"완료,취소" };
+  const tabStatusMap = { 전체:"전체", 진행중:"진행중", 대기중:"대기중", 완료:"완료", 취소:"취소" };
   const jobsForTab = useMemo(()=>{
-    const target = tabStatusMap[jobTab];
-    if(!target) return filteredJobs;
-    if(target.includes(",")) {
-      const arr=target.split(",");
-      return filteredJobs.filter(j=>arr.includes(j.상태));
-    }
+    const target = tabStatusMap[jobTab] || "전체";
+    if(target === "전체") return filteredJobs;
     return filteredJobs.filter(j=>j.상태===target);
   },[filteredJobs, jobTab]);
 
@@ -505,14 +518,17 @@ export default function RecruitDashboard() {
   },[selectedKPI, filteredJobs, filteredCandidates]);
 
   const tabCounts = useMemo(()=>({
-    "진행 중": filteredJobs.filter(j=>j.상태==="진행중").length,
-    "오픈 예정": filteredJobs.filter(j=>j.상태==="대기중").length,
-    "마감": filteredJobs.filter(j=>["완료","취소"].includes(j.상태)).length,
+    전체: filteredJobs.length,
+    진행중: filteredJobs.filter(j=>j.상태==="진행중").length,
+    대기중: filteredJobs.filter(j=>j.상태==="대기중").length,
+    완료: filteredJobs.filter(j=>j.상태==="완료").length,
+    취소: filteredJobs.filter(j=>j.상태==="취소").length,
   }),[filteredJobs]);
 
   // Kanban: filter candidates per stage
   const kanbanStages = useMemo(()=>{
-    return KANBAN_STAGE_DEFS.map(def=>{
+    const visibleStageIds = STAGE_GROUPS[stageGroup] || STAGE_GROUPS["전체"];
+    return KANBAN_STAGE_DEFS.filter(def=>visibleStageIds.includes(def.id)).map(def=>{
       const stageCandidates = ALL_CANDIDATES.filter(c=> c.stage===def.id && matchCandidate(c));
       const currentStageFilter = stageFilters[def.id] || "전체";
       const filteredCandidates = currentStageFilter==="전체"
@@ -520,7 +536,7 @@ export default function RecruitDashboard() {
         : stageCandidates.filter(c=>c.stageStatus===currentStageFilter);
       return { ...def, candidates:filteredCandidates, count:filteredCandidates.length, total:stageCandidates.length, currentStageFilter };
     });
-  },[headerFilters, searchCandidate, searchDept, stageFilters]);
+  },[headerFilters, searchCandidate, searchDept, stageFilters, stageGroup]);
 
   // Summary metrics (derived from filtered candidates + jobs)
   const summaryCards = useMemo(()=>[
@@ -543,6 +559,8 @@ export default function RecruitDashboard() {
   const clearAllFilters = () => {
     setHeaderFilters({ 직군:"전체", 상태:"전체", 담당자:"전체", 직원유형:"전체" });
     setStageFilters({ docs:"전체", rec:"전체", code:"전체", task:"전체", pre:"전체", int1:"전체", int2:"전체", ref:"전체", offer:"전체", final:"전체" });
+    setStageGroup("전체");
+    setStageVisibleCounts({});
     setSearchJob(""); setSearchCandidate(""); setSearchDept("");
     setSelectedKPI(null);
   };
@@ -589,7 +607,7 @@ export default function RecruitDashboard() {
       </aside>
 
       {/* ── Main ── */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", marginRight:selectedKPI?"clamp(320px, 40%, 420px)":0, transition:"margin-right 0.2s ease" }}>
 
         {/* ── Header ── */}
         <header style={{ background:"#fff", borderBottom:"1px solid #E5E7EB", padding:"0 16px", height:54, display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
@@ -612,9 +630,6 @@ export default function RecruitDashboard() {
               {val && <button onClick={()=>set("")} style={{ background:"none", border:"none", cursor:"pointer", padding:0, display:"flex", color:"#9CA3AF" }}><X size={10}/></button>}
             </div>
           ))}
-          <button style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 9px", border:`1px solid ${hasFilter?"#3B82F6":"#E5E7EB"}`, borderRadius:6, background:hasFilter?"#EFF6FF":"#fff", cursor:"pointer", fontSize:12, color:hasFilter?"#2563EB":"#6B7280", whiteSpace:"nowrap" }}>
-            <Filter size={11}/>고급 필터 {hasFilter&&<span style={{ background:"#2563EB", color:"#fff", borderRadius:999, fontSize:10, padding:"0 5px", minWidth:16, textAlign:"center" }}>{activeChips.length}</span>}
-          </button>
           <div style={{ flex:1 }}/>
           <div style={{ position:"relative" }}>
             <button style={{ background:"none", border:"none", cursor:"pointer", color:"#6B7280", display:"flex", padding:4 }}><Bell size={20}/></button>
@@ -627,9 +642,6 @@ export default function RecruitDashboard() {
               <div style={{ fontSize:10, color:"#9CA3AF" }}>영입팀</div>
             </div>
           </div>
-          <button style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", background:"#3B82F6", color:"#fff", border:"none", borderRadius:7, fontWeight:600, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>
-            <Plus size={13}/>공고 등록
-          </button>
         </header>
 
         {/* ── Active Filter Chips ── */}
@@ -675,8 +687,8 @@ export default function RecruitDashboard() {
                 {hasFilter && <Badge text="필터 적용 중" bg="#EFF6FF" color="#2563EB" small/>}
               </div>
               <div style={{ display:"flex", gap:8 }}>
-                <button style={{ fontSize:12, color:"#6B7280", border:"1px solid #E5E7EB", borderRadius:6, padding:"4px 10px", background:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:3 }}>단계 그룹 보기 <ChevronDown size={11}/></button>
-                <button style={{ fontSize:12, color:"#6B7280", border:"1px solid #E5E7EB", borderRadius:6, padding:"4px 10px", background:"#fff", cursor:"pointer" }}>전체 후보자 보기</button>
+                <Dropdown id="stage-group" label="단계 그룹 보기" options={["전체","인터뷰 전","인터뷰","인터뷰 후"]}
+                  value={stageGroup} openId={openId} setOpenId={setOpenId} onChange={setStageGroup} isActive={stageGroup!=="전체"}/>
               </div>
             </div>
             <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:14 }}>
@@ -692,16 +704,27 @@ export default function RecruitDashboard() {
                   {stage.onlyRecommended && (
                     <div style={{ fontSize:10, color:"#9CA3AF", marginBottom:5, background:"#F9FAFB", borderRadius:4, padding:"3px 6px" }}>추천인 있는 후보자만 표시</div>
                   )}
-                  {stage.candidates.length===0
-                    ? <div style={{ fontSize:11, color:"#C4B5FD", background:"#FAFAFA", border:"1px dashed #E5E7EB", borderRadius:8, padding:"14px 0", textAlign:"center" }}>결과 없음</div>
-                    : stage.candidates.map(c=><KanbanCard key={c.id} candidate={c} onClick={setSelectedCandidate}/>)
-                  }
-                  {stage.candidates.length>0 && (
-                    <button onClick={()=>setSelectedCandidate(stage.candidates[0])}
-                      style={{ width:"100%", padding:"5px 0", border:"1px dashed #D1D5DB", borderRadius:6, background:"transparent", fontSize:11, color:"#6B7280", cursor:"pointer", marginBottom:4 }}>
-                      더보기
-                    </button>
-                  )}
+                  {stage.candidates.length===0 ? (
+                    <div style={{ fontSize:11, color:"#C4B5FD", background:"#FAFAFA", border:"1px dashed #E5E7EB", borderRadius:8, padding:"14px 0", textAlign:"center" }}>결과 없음</div>
+                  ) : (()=>{
+                    const defaultCount = 4;
+                    const visibleCount = stageVisibleCounts[stage.id] || defaultCount;
+                    const isComplete = visibleCount >= stage.candidates.length;
+                    const visibleCandidates = stage.candidates.slice(0, visibleCount);
+                    return (
+                      <>
+                        {visibleCandidates.map(c=><KanbanCard key={c.id} candidate={c} onClick={setSelectedCandidate}/>)}
+                        {isComplete ? (
+                          <div style={{ height:24, marginTop:4, borderTop:"1px solid #F3F4F6", background:"#F8FAFF" }} />
+                        ) : (
+                          <button onClick={()=>setStageVisibleCounts(prev=>({ ...prev, [stage.id]: stage.candidates.length }))}
+                            style={{ width:"100%", padding:"8px 0", border:"1px dashed #D1D5DB", borderRadius:6, background:"transparent", fontSize:12, color:"#3B82F6", cursor:"pointer", marginTop:4 }}>
+                            더보기 ({stage.candidates.length - visibleCount}개)
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                   {stage.warnings.map((w,wi)=>w.count>0&&(
                     <div key={wi} style={{ display:"flex", alignItems:"center", gap:3, marginBottom:3 }}>
                       <AlertCircle size={10} color="#EF4444"/>
@@ -723,7 +746,7 @@ export default function RecruitDashboard() {
                 {hasFilter && <Badge text={`${filteredJobs.length}건`} bg="#EFF6FF" color="#2563EB" small/>}
               </div>
               <div style={{ display:"flex", gap:0, borderBottom:"1px solid #E5E7EB", marginBottom:10 }}>
-                {[{label:"진행 중"},{label:"오픈 예정"},{label:"마감"}].map(({label})=>(
+                {[{label:"전체"},{label:"진행중"},{label:"대기중"},{label:"완료"},{label:"취소"}].map(({label})=>(
                   <button key={label} onClick={()=>setJobTab(label)}
                     style={{ padding:"6px 12px", border:"none", background:"transparent", cursor:"pointer", fontSize:13, fontWeight:jobTab===label?700:400, color:jobTab===label?"#3B82F6":"#6B7280", borderBottom:jobTab===label?"2px solid #3B82F6":"2px solid transparent", marginBottom:-1 }}>
                     {label} <span style={{ fontSize:11, fontWeight:600 }}>{tabCounts[label]}</span>
@@ -737,7 +760,7 @@ export default function RecruitDashboard() {
                   <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                     <thead>
                       <tr style={{ borderBottom:"1px solid #F3F4F6" }}>
-                        {["공고명","직군","담당자","진행","인터뷰","합격","정체","상태","마감일"].map(h=>(
+                        {["공고명","직군","담당자","진행","인터뷰","합격","정체","상태"].map(h=>(
                           <th key={h} style={{ padding:"5px 7px", textAlign:"left", color:"#9CA3AF", fontWeight:500, whiteSpace:"nowrap" }}>{h}</th>
                         ))}
                       </tr>
@@ -761,11 +784,6 @@ export default function RecruitDashboard() {
                           ))}
                           <td style={{ padding:"7px 7px" }}>
                             <Badge text={job.urgency} bg={urgencyStyle(job.urgency).bg} color={urgencyStyle(job.urgency).color} small/>
-                          </td>
-                          <td style={{ padding:"7px 7px", color:"#6B7280", whiteSpace:"nowrap" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-                              {job.deadline}<MoreHorizontal size={11} color="#D1D5DB"/>
-                            </div>
                           </td>
                         </tr>
                       ))}
