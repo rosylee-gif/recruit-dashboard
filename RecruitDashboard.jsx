@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
-  LayoutDashboard, Megaphone, Users, CalendarDays, FileText,
+  LayoutDashboard, Megaphone, Users, FileText,
   Settings, Star, Bell, ChevronDown, Search, X,
   TrendingUp, TrendingDown, AlertCircle,
   ChevronRight, CheckCircle2, Circle,
@@ -9,32 +9,12 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. CONSTANTS & STATIC CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-const STAGE_FILTERS = {
-  docs:  ["전체", "진행중", "합격", "포기", "탈락", "스킵"],
-  rec:   ["전체", "진행중", "작성완료"],
-  code:  ["전체", "진행중", "포기", "탈락", "보류", "합격", "스킵", "평가필요"],
-  task:  ["전체", "진행중", "포기", "탈락", "합격"],
-  pre:   ["전체", "진행중", "포기", "탈락", "합격", "스킵"],
-  int1:  ["전체", "진행중", "포기", "탈락", "합격", "스킵"],
-  int2:  ["전체", "진행중", "포기", "탈락", "합격", "스킵"],
-  ref:   ["전체", "진행중", "완료", "스킵"],
-  offer: ["전체", "진행중", "수락", "포기", "제안"],
-  final: ["전체", "추가정보 입력중", "입사확정"],
-};
-
 const HEADER_FILTERS = [
   { key: "직군",     label: "전체 직군",     options: ["전체", "테크", "디자인", "서비스비즈", "스태프"] },
   { key: "상태",     label: "전체 상태",     options: ["전체", "대기중", "진행중", "완료", "취소"] },
   { key: "담당자",   label: "전체 담당자",   options: ["전체", "rosy.lee", "elena.62", "jamie.bk", "mk.jee", "zoe.parc"] },
   { key: "직원유형", label: "전체 직원유형", options: ["전체", "정규직", "계약직", "인턴", "어시스턴트", "경영계약직", "전문계약직"] },
 ];
-
-const STAGE_GROUPS = {
-  전체: ["docs","rec","code","task","pre","int1","int2","ref","offer","final"],
-  "인터뷰 전": ["docs","rec","code","task"],
-  인터뷰: ["pre","int1","int2"],
-  "인터뷰 후": ["ref","offer","final"],
-};
 
 const LANDING_PRESETS = [
   { key:"all", label:"전체 공고", filters:{ 직군:"전체", 상태:"전체", 담당자:"전체", 직원유형:"전체", searchJob:"", searchCandidate:"", searchDept:"" } },
@@ -239,7 +219,7 @@ function CandidateModal({ candidate, onClose }) {
           <div style={{ fontWeight:700, fontSize:18, color:"#111" }}>{candidate.name}</div>
           <div style={{ fontSize:13, color:"#6B7280" }}>{candidate.jobTitle} · {candidate.code}</div>
         </div>
-        <Badge text={KANBAN_STAGE_DEFS.find(s=>s.id===candidate.stage)?.label||"서류평가"} bg="#EFF6FF" color="#3B82F6"/>
+        <Badge text={candidate.stage} bg="#EFF6FF" color="#3B82F6"/>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
         {[["직군",candidate.직군],["담당자",candidate.담당자],["부서",candidate.부서],["직원유형",candidate.직원유형],["이메일",d.email],["연락처",d.phone],["학력",d.school],["경력",d.career]].map(([k,v])=>(
@@ -310,27 +290,6 @@ function JobModal({ job, onClose }) {
   );
 }
 
-function KanbanCard({ candidate, onClick }) {
-  const [hov, setHov]=useState(false);
-  return (
-    <div onClick={()=>onClick(candidate)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{ background:hov?"#F0F9FF":"#fff", border:`1px solid ${hov?"#BAE6FD":"#E5E7EB"}`, borderRadius:8, padding:"9px 10px 8px", cursor:"pointer", transition:"all 0.12s", marginBottom:6 }}>
-      <div style={{ fontWeight:600, fontSize:13, color:"#111", marginBottom:2 }}>{candidate.name}</div>
-      <div style={{ fontSize:11, color:"#6B7280", marginBottom:5 }}>{candidate.jobTitle}</div>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontSize:10, color:"#9CA3AF" }}>{candidate.code}</span>
-        <span>
-          {candidate.days!=null && <span style={{ fontSize:10, fontWeight:600, color:candidate.days>=7?"#EF4444":candidate.days>=3?"#F59E0B":"#6B7280" }}>{candidate.days}일 경과</span>}
-          {candidate.recommended && <span style={{ fontSize:10, color:"#6B7280" }}>추천인 있음</span>}
-          {candidate.dueDate     && <span style={{ fontSize:10, color:"#6B7280" }}>{candidate.dueDate}</span>}
-          {candidate.refStatus   && <Badge text={candidate.refStatus} bg={candidate.refStatus==="진행 중"?"#ECFDF5":"#F9FAFB"} color={candidate.refStatus==="진행 중"?"#10B981":"#6B7280"} small/>}
-          {candidate.joinDate    && <span style={{ fontSize:10, color:"#3B82F6", fontWeight:500 }}>{candidate.joinDate}</span>}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 // Controlled Dropdown — uses shared openId so only one is open at a time
 function Dropdown({ id, label, options, value, openId, setOpenId, onChange, isActive }) {
   const ref=useRef(null);
@@ -368,40 +327,6 @@ function Dropdown({ id, label, options, value, openId, setOpenId, onChange, isAc
   );
 }
 
-function StageSelect({ stageId, openId, setOpenId, value="전체", onChange }) {
-  const options=STAGE_FILTERS[stageId]||["전체","진행중"];
-  const id=`stage-${stageId}`;
-  const ref=useRef(null);
-  const isOpen=openId===id;
-  useEffect(()=>{
-    if(!isOpen) return;
-    const h=e=>{if(ref.current&&!ref.current.contains(e.target))setOpenId(null);};
-    document.addEventListener("mousedown",h);
-    return ()=>document.removeEventListener("mousedown",h);
-  },[isOpen,setOpenId]);
-  return (
-    <div ref={ref} style={{ position:"relative" }}>
-      <button onClick={()=>setOpenId(isOpen?null:id)}
-        style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"3px 7px", fontSize:11, border:"1px solid #E5E7EB", borderRadius:4, background:"#F9FAFB", color:"#6B7280", cursor:"pointer" }}>
-        <span>{value}</span>
-        <ChevronDown size={10} style={{ transform:isOpen?"rotate(180deg)":"rotate(0deg)", transition:"transform 0.15s" }}/>
-      </button>
-      {isOpen && (
-        <div style={{ position:"absolute", top:"calc(100% + 2px)", left:0, zIndex:100, background:"#fff", border:"1px solid #E5E7EB", borderRadius:6, boxShadow:"0 6px 16px rgba(0,0,0,0.1)", minWidth:110, overflow:"hidden" }}>
-          {options.map(opt=>(
-            <div key={opt} onClick={()=>{onChange(opt);setOpenId(null);}}
-              style={{ padding:"6px 12px", fontSize:12, color:opt===value?"#2563EB":"#374151", background:opt===value?"#EFF6FF":"transparent", cursor:"pointer", fontWeight:opt===value?600:400 }}
-              onMouseEnter={e=>{if(opt!==value)e.currentTarget.style.background="#F9FAFB";}}
-              onMouseLeave={e=>{if(opt!==value)e.currentTarget.style.background="transparent";}}>
-              {opt}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. FILTER CHIP (shows active filters, click to clear)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -421,7 +346,7 @@ export default function RecruitDashboard() {
   const [activeNav, setActiveNav]             = useState("대시보드");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [selectedJob, setSelectedJob]         = useState(null);
-  const [jobTab, setJobTab]                   = useState("전체");
+  const [jobTab, setJobTab]                   = useState("진행중");
   const [actionFilter, setActionFilter]       = useState("전체");
   const [openId, setOpenId]                   = useState(null);
   const [headerFilters, setHeaderFilters]     = useState({ 직군:"전체", 상태:"전체", 담당자:"전체", 직원유형:"전체" });
@@ -431,16 +356,9 @@ export default function RecruitDashboard() {
   const [landingPreset, setLandingPreset]     = useState(LANDING_PRESETS[0]);
   const [landingMenuOpen, setLandingMenuOpen] = useState(false);
   const [selectedKPI, setSelectedKPI]         = useState(null);
-  const [stageGroup, setStageGroup]           = useState("전체");
-  const [stageFilters, setStageFilters]       = useState({ docs:"전체", rec:"전체", code:"전체", task:"전체", pre:"전체", int1:"전체", int2:"전체", ref:"전체", offer:"전체", final:"전체" });
-  const [stageVisibleCounts, setStageVisibleCounts] = useState({});
 
   const setHF = (k,v) => setHeaderFilters(p=>({...p,[k]:v}));
   const clearHF = (k) => setHF(k,"전체");
-
-  useEffect(()=>{
-    setStageVisibleCounts({});
-  }, [stageFilters, headerFilters, searchCandidate, searchDept]);
 
   const applyLandingPreset = (preset) => {
     setLandingPreset(preset);
@@ -486,12 +404,9 @@ export default function RecruitDashboard() {
   // ── Derived data
   const filteredJobs = useMemo(()=>ALL_JOB_POSTINGS.filter(matchJob),[headerFilters,searchJob,searchDept]);
 
-  // Job postings split by tab
-  const tabStatusMap = { 전체:"전체", 진행중:"진행중", 대기중:"대기중", 완료:"완료", 취소:"취소" };
+  // Job postings split by tab (진행중 / 대기중 only)
   const jobsForTab = useMemo(()=>{
-    const target = tabStatusMap[jobTab] || "전체";
-    if(target === "전체") return filteredJobs;
-    return filteredJobs.filter(j=>j.상태===target);
+    return filteredJobs.filter(j=>j.상태===jobTab);
   },[filteredJobs, jobTab]);
 
   const filteredCandidates = useMemo(()=>ALL_CANDIDATES.filter(matchCandidate),[headerFilters,searchCandidate,searchDept]);
@@ -518,25 +433,9 @@ export default function RecruitDashboard() {
   },[selectedKPI, filteredJobs, filteredCandidates]);
 
   const tabCounts = useMemo(()=>({
-    전체: filteredJobs.length,
     진행중: filteredJobs.filter(j=>j.상태==="진행중").length,
     대기중: filteredJobs.filter(j=>j.상태==="대기중").length,
-    완료: filteredJobs.filter(j=>j.상태==="완료").length,
-    취소: filteredJobs.filter(j=>j.상태==="취소").length,
   }),[filteredJobs]);
-
-  // Kanban: filter candidates per stage
-  const kanbanStages = useMemo(()=>{
-    const visibleStageIds = STAGE_GROUPS[stageGroup] || STAGE_GROUPS["전체"];
-    return KANBAN_STAGE_DEFS.filter(def=>visibleStageIds.includes(def.id)).map(def=>{
-      const stageCandidates = ALL_CANDIDATES.filter(c=> c.stage===def.id && matchCandidate(c));
-      const currentStageFilter = stageFilters[def.id] || "전체";
-      const filteredCandidates = currentStageFilter==="전체"
-        ? stageCandidates
-        : stageCandidates.filter(c=>c.stageStatus===currentStageFilter);
-      return { ...def, candidates:filteredCandidates, count:filteredCandidates.length, total:stageCandidates.length, currentStageFilter };
-    });
-  },[headerFilters, searchCandidate, searchDept, stageFilters, stageGroup]);
 
   // Summary metrics (derived from filtered candidates + jobs)
   const summaryCards = useMemo(()=>[
@@ -558,9 +457,6 @@ export default function RecruitDashboard() {
 
   const clearAllFilters = () => {
     setHeaderFilters({ 직군:"전체", 상태:"전체", 담당자:"전체", 직원유형:"전체" });
-    setStageFilters({ docs:"전체", rec:"전체", code:"전체", task:"전체", pre:"전체", int1:"전체", int2:"전체", ref:"전체", offer:"전체", final:"전체" });
-    setStageGroup("전체");
-    setStageVisibleCounts({});
     setSearchJob(""); setSearchCandidate(""); setSearchDept("");
     setSelectedKPI(null);
   };
@@ -597,20 +493,17 @@ export default function RecruitDashboard() {
           <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", cursor:"pointer", color:"#9CA3AF", fontSize:12 }}>
             <Star size={14}/><span>나의 즐겨찾기</span><ChevronRight size={12} style={{ marginLeft:"auto" }}/>
           </div>
-          <div style={{ margin:"8px 10px", padding:"8px 10px", background:"#FFFBEB", borderRadius:6, border:"1px solid #FDE68A" }}>
-            <div style={{ fontSize:10, color:"#92400E", marginBottom:2 }}>현재 랜딩 페이지</div>
-            <div style={{ fontWeight:600, fontSize:12, color:"#78350F" }}>{landingPreset.label}</div>
-            <button onClick={()=>setLandingMenuOpen(open=>!open)} style={{ marginTop:6, width:"100%", padding:"4px 0", background:"#F59E0B", color:"#fff", border:"none", borderRadius:4, fontSize:11, fontWeight:600, cursor:"pointer" }}>변경하기</button>
-            {landingMenuOpen && (
-              <div style={{ marginTop:6, background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, overflow:"hidden" }}>
-                {LANDING_PRESETS.map(preset=> (
-                  <button key={preset.key} onClick={()=>applyLandingPreset(preset)}
-                    style={{ width:"100%", textAlign:"left", padding:"8px 10px", border:"none", background:landingPreset.key===preset.key?"#EFF6FF":"#fff", color:"#374151", cursor:"pointer", fontWeight:landingPreset.key===preset.key?700:500 }}>
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Landing toggle switch */}
+          <div style={{ margin:"8px 10px", padding:"10px 10px", background:"#F9FAFB", borderRadius:8, border:"1px solid #E5E7EB" }}>
+            <div style={{ fontSize:10, color:"#9CA3AF", marginBottom:8 }}>공고 보기</div>
+            <div style={{ display:"flex", background:"#E5E7EB", borderRadius:6, padding:2, gap:2 }}>
+              {LANDING_PRESETS.map(preset=>(
+                <button key={preset.key} onClick={()=>applyLandingPreset(preset)}
+                  style={{ flex:1, padding:"5px 0", fontSize:11, fontWeight:landingPreset.key===preset.key?700:400, border:"none", borderRadius:5, cursor:"pointer", background:landingPreset.key===preset.key?"#fff":"transparent", color:landingPreset.key===preset.key?"#2563EB":"#6B7280", boxShadow:landingPreset.key===preset.key?"0 1px 3px rgba(0,0,0,0.12)":"none", transition:"all 0.15s" }}>
+                  {preset.key==="all" ? "전체" : "내 담당"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </aside>
@@ -687,162 +580,99 @@ export default function RecruitDashboard() {
             ))}
           </div>
 
-          {/* Kanban */}
-          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, padding:"14px 14px 0" }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+          {/* Job Postings — full width */}
+          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, padding:"14px 14px 0", display:"flex", flexDirection:"column" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <span style={{ fontWeight:700, fontSize:14, color:"#111" }}>공고 현황</span>
+              {hasFilter && <Badge text={`${filteredJobs.length}건`} bg="#EFF6FF" color="#2563EB" small/>}
+            </div>
+            <div style={{ display:"flex", gap:0, borderBottom:"1px solid #E5E7EB", marginBottom:10 }}>
+              {[{label:"진행중"},{label:"대기중"}].map(({label})=>(
+                <button key={label} onClick={()=>setJobTab(label)}
+                  style={{ padding:"6px 12px", border:"none", background:"transparent", cursor:"pointer", fontSize:13, fontWeight:jobTab===label?700:400, color:jobTab===label?"#3B82F6":"#6B7280", borderBottom:jobTab===label?"2px solid #3B82F6":"2px solid transparent", marginBottom:-1 }}>
+                  {label} <span style={{ fontSize:11, fontWeight:600 }}>{tabCounts[label]}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ overflow:"auto" }}>
+              {jobsForTab.length===0
+                ? <EmptyState message="조건에 맞는 공고가 없습니다"/>
+                : (
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                  <thead>
+                    <tr style={{ borderBottom:"1px solid #F3F4F6" }}>
+                      {["공고명","직군","담당자","진행","인터뷰","합격","정체","긴급도"].map(h=>(
+                        <th key={h} style={{ padding:"5px 7px", textAlign:"left", color:"#9CA3AF", fontWeight:500, whiteSpace:"nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jobsForTab.map(job=>(
+                      <tr key={job.id} onClick={()=>setSelectedJob(job)}
+                        style={{ borderBottom:"1px solid #F9FAFB", cursor:"pointer" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="#F9FAFB"}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <td style={{ padding:"7px 7px", fontWeight:500, color:"#111", whiteSpace:"nowrap", maxWidth:180, overflow:"hidden", textOverflow:"ellipsis" }}>{job.title}</td>
+                        <td style={{ padding:"7px 7px", color:"#6B7280", whiteSpace:"nowrap" }}>{job.직군}</td>
+                        <td style={{ padding:"7px 7px" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                            <Avatar name={job.담당자[0]} size={18}/>
+                            <span style={{ color:"#374151", fontSize:11 }}>{job.담당자}</span>
+                          </div>
+                        </td>
+                        {[job.applied,job.interview,job.offer,job.stale].map((v,i)=>(
+                          <td key={i} style={{ padding:"7px 7px", color:"#374151", textAlign:"center" }}>{v}</td>
+                        ))}
+                        <td style={{ padding:"7px 7px" }}>
+                          <Badge text={job.urgency} bg={urgencyStyle(job.urgency).bg} color={urgencyStyle(job.urgency).color} small/>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            {jobsForTab.length>0 && <div style={{ fontSize:12, color:"#9CA3AF", padding:"8px 0", textAlign:"center" }}>총 {jobsForTab.length}개 공고</div>}
+          </div>
+
+          {/* Action Items — full width below job postings */}
+          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, padding:"14px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ fontWeight:700, fontSize:14, color:"#111" }}>영입 프로세스 진행 현황</span>
-                <AlertCircle size={13} color="#9CA3AF"/>
-                {hasFilter && <Badge text="필터 적용 중" bg="#EFF6FF" color="#2563EB" small/>}
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                <Dropdown id="stage-group" label="단계 그룹 보기" options={["전체","인터뷰 전","인터뷰","인터뷰 후"]}
-                  value={stageGroup} openId={openId} setOpenId={setOpenId} onChange={setStageGroup} isActive={stageGroup!=="전체"}/>
+                <span style={{ fontWeight:700, fontSize:14, color:"#111" }}>오늘의 액션 필요</span>
+                <span style={{ background:"#EF4444", color:"#fff", fontSize:11, fontWeight:700, borderRadius:999, padding:"1px 7px" }}>{filteredActions.length}</span>
               </div>
             </div>
-            <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:14 }}>
-              {kanbanStages.map(stage=>(
-                <div key={stage.id} style={{ minWidth:144, maxWidth:144, flexShrink:0 }}>
-                  <div style={{ marginBottom:7 }}>
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-                      <span style={{ fontSize:12, fontWeight:600, color:"#374151" }}>{stage.label}</span>
-                      <span style={{ fontSize:12, fontWeight:700, color: stage.count===0?"#9CA3AF":"#3B82F6" }}>{stage.count}{stage.total!=null && stage.total!==stage.count?`/${stage.total}`:""}</span>
-                    </div>
-                    <StageSelect stageId={stage.id} openId={openId} setOpenId={setOpenId} value={stage.currentStageFilter} onChange={value=>setStageFilters(p=>({...p,[stage.id]:value}))}/>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:10 }}>
+              {ACTION_TAGS.map(tag=>{
+                const count=tag==="전체"?ACTION_ITEMS.length:ACTION_ITEMS.filter(a=>a.tag===tag).length;
+                return (
+                  <button key={tag} onClick={()=>setActionFilter(tag)}
+                    style={{ padding:"2px 9px", borderRadius:999, fontSize:11, fontWeight:500, cursor:"pointer", border:`1px solid ${actionFilter===tag?"#3B82F6":"#E5E7EB"}`, background:actionFilter===tag?"#EFF6FF":"#fff", color:actionFilter===tag?"#3B82F6":"#6B7280" }}>
+                    {tag} {count}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"0 24px" }}>
+              {filteredActions.length===0
+                ? <EmptyState message="조건에 맞는 액션 항목이 없습니다"/>
+                : filteredActions.map((item,i)=>(
+                <div key={item.id}
+                  style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 6px", borderBottom:"1px solid #F3F4F6", cursor:"pointer", borderRadius:6 }}
+                  onClick={()=>setSelectedCandidate(ALL_CANDIDATES.find(c=>c.name===item.candidateName)||{name:item.candidateName, jobTitle:item.candidateRole, code:"—", stage:"docs", 직군:"—", 담당자:"—", 직원유형:"—", 부서:item.부서})}
+                  onMouseEnter={e=>e.currentTarget.style.background="#F9FAFB"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <Badge text={item.tag} bg={item.tagBg} color={item.tagColor} small/>
+                  <div style={{ flex:1, minWidth:0, fontSize:12, color:"#374151" }}>
+                    <span style={{ fontWeight:500 }}>{item.candidateName} </span>
+                    <span style={{ color:"#9CA3AF" }}>({item.candidateRole}) </span>
+                    <span style={{ color:"#6B7280" }}>{item.action}</span>
                   </div>
-                  {stage.onlyRecommended && (
-                    <div style={{ fontSize:10, color:"#9CA3AF", marginBottom:5, background:"#F9FAFB", borderRadius:4, padding:"3px 6px" }}>추천인 있는 후보자만 표시</div>
-                  )}
-                  {stage.candidates.length===0 ? (
-                    <div style={{ fontSize:11, color:"#C4B5FD", background:"#FAFAFA", border:"1px dashed #E5E7EB", borderRadius:8, padding:"14px 0", textAlign:"center" }}>결과 없음</div>
-                  ) : (()=>{
-                    const defaultCount = 4;
-                    const visibleCount = stageVisibleCounts[stage.id] || defaultCount;
-                    const isComplete = visibleCount >= stage.candidates.length;
-                    const visibleCandidates = stage.candidates.slice(0, visibleCount);
-                    return (
-                      <>
-                        {visibleCandidates.map(c=><KanbanCard key={c.id} candidate={c} onClick={setSelectedCandidate}/>)}
-                        {isComplete ? (
-                          <div style={{ height:24, marginTop:4, borderTop:"1px solid #F3F4F6", background:"#F8FAFF" }} />
-                        ) : (
-                          <button onClick={()=>setStageVisibleCounts(prev=>({ ...prev, [stage.id]: stage.candidates.length }))}
-                            style={{ width:"100%", padding:"8px 0", border:"1px dashed #D1D5DB", borderRadius:6, background:"transparent", fontSize:12, color:"#3B82F6", cursor:"pointer", marginTop:4 }}>
-                            더보기 ({stage.candidates.length - visibleCount}개)
-                          </button>
-                        )}
-                      </>
-                    );
-                  })()}
-                  {stage.warnings.map((w,wi)=>w.count>0&&(
-                    <div key={wi} style={{ display:"flex", alignItems:"center", gap:3, marginBottom:3 }}>
-                      <AlertCircle size={10} color="#EF4444"/>
-                      <span style={{ fontSize:10, color:"#EF4444", fontWeight:500 }}>{w.label} {w.count}</span>
-                    </div>
-                  ))}
+                  <span style={{ fontSize:11, fontWeight:600, color:item.urgencyColor, whiteSpace:"nowrap" }}>{item.urgency}</span>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Bottom */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-
-            {/* Job Postings */}
-            <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, padding:"14px 14px 0", display:"flex", flexDirection:"column" }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                <span style={{ fontWeight:700, fontSize:14, color:"#111" }}>공고 현황</span>
-                {hasFilter && <Badge text={`${filteredJobs.length}건`} bg="#EFF6FF" color="#2563EB" small/>}
-              </div>
-              <div style={{ display:"flex", gap:0, borderBottom:"1px solid #E5E7EB", marginBottom:10 }}>
-                {[{label:"전체"},{label:"진행중"},{label:"대기중"},{label:"완료"},{label:"취소"}].map(({label})=>(
-                  <button key={label} onClick={()=>setJobTab(label)}
-                    style={{ padding:"6px 12px", border:"none", background:"transparent", cursor:"pointer", fontSize:13, fontWeight:jobTab===label?700:400, color:jobTab===label?"#3B82F6":"#6B7280", borderBottom:jobTab===label?"2px solid #3B82F6":"2px solid transparent", marginBottom:-1 }}>
-                    {label} <span style={{ fontSize:11, fontWeight:600 }}>{tabCounts[label]}</span>
-                  </button>
-                ))}
-              </div>
-              <div style={{ overflow:"auto", flex:1 }}>
-                {jobsForTab.length===0
-                  ? <EmptyState message="조건에 맞는 공고가 없습니다"/>
-                  : (
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                    <thead>
-                      <tr style={{ borderBottom:"1px solid #F3F4F6" }}>
-                        {["공고명","직군","담당자","진행","인터뷰","합격","정체","상태"].map(h=>(
-                          <th key={h} style={{ padding:"5px 7px", textAlign:"left", color:"#9CA3AF", fontWeight:500, whiteSpace:"nowrap" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jobsForTab.map(job=>(
-                        <tr key={job.id} onClick={()=>setSelectedJob(job)}
-                          style={{ borderBottom:"1px solid #F9FAFB", cursor:"pointer" }}
-                          onMouseEnter={e=>e.currentTarget.style.background="#F9FAFB"}
-                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                          <td style={{ padding:"7px 7px", fontWeight:500, color:"#111", whiteSpace:"nowrap", maxWidth:140, overflow:"hidden", textOverflow:"ellipsis" }}>{job.title}</td>
-                          <td style={{ padding:"7px 7px", color:"#6B7280", whiteSpace:"nowrap" }}>{job.직군}</td>
-                          <td style={{ padding:"7px 7px" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                              <Avatar name={job.담당자[0]} size={18}/>
-                              <span style={{ color:"#374151", fontSize:11 }}>{job.담당자}</span>
-                            </div>
-                          </td>
-                          {[job.applied,job.interview,job.offer,job.stale].map((v,i)=>(
-                            <td key={i} style={{ padding:"7px 7px", color:"#374151", textAlign:"center" }}>{v}</td>
-                          ))}
-                          <td style={{ padding:"7px 7px" }}>
-                            <Badge text={job.urgency} bg={urgencyStyle(job.urgency).bg} color={urgencyStyle(job.urgency).color} small/>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-              {jobsForTab.length>0 && <div style={{ fontSize:12, color:"#9CA3AF", padding:"8px 0", textAlign:"center" }}>총 {jobsForTab.length}개 공고</div>}
-            </div>
-
-            {/* Action Items */}
-            <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, padding:"14px", display:"flex", flexDirection:"column" }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                  <span style={{ fontWeight:700, fontSize:14, color:"#111" }}>오늘의 액션 필요</span>
-                  <span style={{ background:"#EF4444", color:"#fff", fontSize:11, fontWeight:700, borderRadius:999, padding:"1px 7px" }}>{filteredActions.length}</span>
-                </div>
-              </div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:10 }}>
-                {ACTION_TAGS.map(tag=>{
-                  const count=tag==="전체"?ACTION_ITEMS.length:ACTION_ITEMS.filter(a=>a.tag===tag).length;
-                  return (
-                    <button key={tag} onClick={()=>setActionFilter(tag)}
-                      style={{ padding:"2px 9px", borderRadius:999, fontSize:11, fontWeight:500, cursor:"pointer", border:`1px solid ${actionFilter===tag?"#3B82F6":"#E5E7EB"}`, background:actionFilter===tag?"#EFF6FF":"#fff", color:actionFilter===tag?"#3B82F6":"#6B7280" }}>
-                      {tag} {count}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ flex:1 }}>
-                {filteredActions.length===0
-                  ? <EmptyState message="조건에 맞는 액션 항목이 없습니다"/>
-                  : filteredActions.map((item,i)=>(
-                  <div key={item.id}
-                    style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 6px", borderBottom:i<filteredActions.length-1?"1px solid #F3F4F6":"none", cursor:"pointer", borderRadius:6 }}
-                    onClick={()=>setSelectedCandidate(ALL_CANDIDATES.find(c=>c.name===item.candidateName)||{name:item.candidateName, jobTitle:item.candidateRole, code:"—", stage:"docs", 직군:"—", 담당자:"—", 직원유형:"—", 부서:item.부서})}
-                    onMouseEnter={e=>e.currentTarget.style.background="#F9FAFB"}
-                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <Badge text={item.tag} bg={item.tagBg} color={item.tagColor} small/>
-                    <div style={{ flex:1, minWidth:0, fontSize:12, color:"#374151" }}>
-                      <span style={{ fontWeight:500 }}>{item.candidateName} </span>
-                      <span style={{ color:"#9CA3AF" }}>({item.candidateRole}) </span>
-                      <span style={{ color:"#6B7280" }}>{item.action}</span>
-                    </div>
-                    <span style={{ fontSize:11, fontWeight:600, color:item.urgencyColor, whiteSpace:"nowrap" }}>{item.urgency}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* KPI 상세는 우측 고정 사이드 패널로 렌더링됩니다 (전체화면 우측) */}
           </div>
         </div>
       </div>
@@ -868,8 +698,8 @@ export default function RecruitDashboard() {
                   ) : (
                     <>
                       <div style={{ fontWeight:700, color:"#111" }}>{item.name}</div>
-                      <div style={{ fontSize:12, color:"#6B7280" }}>{item.jobTitle} · {KANBAN_STAGE_DEFS.find(s=>s.id===item.stage)?.label||item.stage}</div>
-                      <div style={{ fontSize:12, color:"#374151" }}>담당자 {item.담당자} · 상태 {item.stageStatus || item.단계상태 || "-"}</div>
+                      <div style={{ fontSize:12, color:"#6B7280" }}>{item.jobTitle} · {item.stage}</div>
+                      <div style={{ fontSize:12, color:"#374151" }}>담당자 {item.담당자} · 상태 {item.stageStatus || "-"}</div>
                     </>
                   )}
                 </div>
