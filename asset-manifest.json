@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/recruit-dashboard/static/css/main.5158c1ed.css",
-    "main.js": "/recruit-dashboard/static/js/main.89d8334d.js",
+    "main.js": "/recruit-dashboard/static/js/main.b4a75e45.js",
     "static/js/453.807fdba6.chunk.js": "/recruit-dashboard/static/js/453.807fdba6.chunk.js",
     "index.html": "/recruit-dashboard/index.html",
     "main.5158c1ed.css.map": "/recruit-dashboard/static/css/main.5158c1ed.css.map",
-    "main.89d8334d.js.map": "/recruit-dashboard/static/js/main.89d8334d.js.map",
+    "main.b4a75e45.js.map": "/recruit-dashboard/static/js/main.b4a75e45.js.map",
     "453.807fdba6.chunk.js.map": "/recruit-dashboard/static/js/453.807fdba6.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.5158c1ed.css",
-    "static/js/main.89d8334d.js"
+    "static/js/main.b4a75e45.js"
   ]
 }
